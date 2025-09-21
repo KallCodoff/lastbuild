@@ -1,0 +1,647 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Return YouTube Dislikes</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Roboto', Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      line-height: 1.6;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    :root {
+      --bg-color: #f9f9f9;
+      --text-color: #333;
+      --header-bg: #fff;
+      --card-bg: #fff;
+      --shadow-color: rgba(0, 0, 0, 0.1);
+      --secondary-text: #666;
+      --faq-bg: #fff;
+      --faq-shadow: rgba(0, 0, 0, 0.05);
+    }
+
+    body.dark-theme {
+      --bg-color: #1a1a1a;
+      --text-color: #e0e0e0;
+      --header-bg: #2a2a2a;
+      --card-bg: #333;
+      --shadow-color: rgba(255, 255, 255, 0.1);
+      --secondary-text: #b0b0b0;
+      --faq-bg: #2a2a2a;
+      --faq-shadow: rgba(255, 255, 255, 0.05);
+    }
+
+    body.locked {
+      overflow: hidden;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      background-color: var(--header-bg);
+      box-shadow: 0 2px 5px var(--shadow-color);
+      border-radius: 10px;
+      margin-bottom: 30px;
+    }
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    .header-buttons {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-buttons a, .header-buttons button {
+      text-decoration: none;
+      padding: 8px 15px;
+      border-radius: 5px;
+      font-weight: 500;
+      transition: transform 0.2s ease;
+      border: none;
+      cursor: pointer;
+      background: none;
+    }
+
+    .header-buttons a:hover, .header-buttons button:hover {
+      transform: translateY(-2px);
+    }
+
+    .download-apk {
+      background: linear-gradient(45deg, #ff0000, #cc0000);
+      color: #fff;
+    }
+
+    .telegram {
+      color: #0088cc;
+    }
+
+    .language-toggle, .theme-toggle {
+      color: var(--text-color);
+      font-size: 1rem;
+    }
+
+    .hero {
+      text-align: center;
+      padding: 50px 20px;
+      background: linear-gradient(135deg, var(--card-bg), var(--bg-color));
+      border-radius: 15px;
+      margin-bottom: 40px;
+    }
+
+    .hero h1 {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+      color: var(--text-color);
+    }
+
+    .hero img {
+      vertical-align: middle;
+      height: 40px;
+    }
+
+    .hero p {
+      font-size: 1.1rem;
+      color: var(--secondary-text);
+      margin-bottom: 30px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .cta-buttons a {
+      display: inline-block;
+      padding: 15px 30px;
+      border-radius: 25px;
+      text-decoration: none;
+      font-size: 1.1rem;
+      font-weight: 500;
+      margin: 10px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .cta-buttons a:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 5px 15px var(--shadow-color);
+    }
+
+    .primary-cta {
+      background: linear-gradient(45deg, #ff0000, #cc0000);
+      color: #fff;
+    }
+
+    .secondary-cta {
+      background: linear-gradient(45deg, #0088cc, #006699);
+      color: #fff;
+    }
+
+    .captcha-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .captcha-modal-content {
+      background: var(--card-bg);
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 5px 15px var(--shadow-color);
+      max-width: 400px;
+      width: 90%;
+    }
+
+    .captcha-modal-content h2 {
+      font-size: 1.8rem;
+      margin-bottom: 20px;
+      color: var(--text-color);
+    }
+
+    .captcha-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .captcha-container canvas {
+      border: 2px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .captcha-input {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .captcha-input input {
+      padding: 10px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      width: 200px;
+    }
+
+    .captcha-input button {
+      padding: 8px 20px;
+      background: linear-gradient(45deg, #ff0000, #cc0000);
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .captcha-input button:hover {
+      transform: translateY(-2px);
+    }
+
+    .captcha-status {
+      margin-top: 10px;
+      font-size: 0.9rem;
+      color: var(--secondary-text);
+    }
+
+    .faq {
+      padding: 40px 20px;
+    }
+
+    .faq h2 {
+      font-size: 2rem;
+      margin-bottom: 30px;
+      text-align: center;
+      color: var(--text-color);
+    }
+
+    .faq-item {
+      background-color: var(--faq-bg);
+      border-radius: 10px;
+      margin-bottom: 15px;
+      overflow: hidden;
+      box-shadow: 0 2px 5px var(--faq-shadow);
+    }
+
+    .faq-question {
+      padding: 15px 20px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 500;
+      color: var(--text-color);
+    }
+
+    .faq-answer {
+      padding: 0 20px 15px;
+      display: none;
+      color: var(--secondary-text);
+      font-size: 0.95rem;
+    }
+
+    .faq-answer.active {
+      display: block;
+    }
+
+    .arrow {
+      transition: transform 0.3s ease;
+    }
+
+    .arrow.active {
+      transform: rotate(180deg);
+    }
+
+    .social-section {
+      padding: 40px 20px;
+      text-align: center;
+    }
+
+    .social-section h2 {
+      font-size: 2rem;
+      margin-bottom: 30px;
+      color: var(--text-color);
+    }
+
+    .developer {
+      margin-bottom: 30px;
+    }
+
+    .developer h3 {
+      font-size: 1.5rem;
+      margin-bottom: 15px;
+      color: var(--text-color);
+    }
+
+    .social-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .social-buttons a {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 25px;
+      text-decoration: none;
+      font-weight: 500;
+      color: #fff;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .social-buttons a:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 5px 15px var(--shadow-color);
+    }
+
+    .github {
+      background: linear-gradient(45deg, #333, #555);
+    }
+
+    .telegram {
+      background: linear-gradient(45deg, #0088cc, #006699);
+    }
+
+    .tiktok {
+      background: linear-gradient(45deg, #000, #333);
+    }
+
+    .social-buttons img {
+      width: 20px;
+      height: 20px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 0.9rem;
+      color: var(--secondary-text);
+    }
+
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 1.8rem;
+      }
+
+      .hero img {
+        height: 30px;
+      }
+
+      .cta-buttons a {
+        display: block;
+        width: 80%;
+        margin: 10px auto;
+      }
+
+      header {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .header-buttons {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body class="locked">
+  <div class="captcha-modal" id="captchaModal">
+    <div class="captcha-modal-content">
+      <h2 data-en="KallCode CAPTCHA Verification" data-ru="Проверка KallCode CAPTCHA">KallCode CAPTCHA Verification</h2>
+      <div class="captcha-container">
+        <canvas id="captchaCanvas" width="200" height="80"></canvas>
+        <div class="captcha-input">
+          <input type="text" id="captchaInput" placeholder="Enter code">
+          <button onclick="refreshCaptcha()">Refresh</button>
+          <div class="captcha-status" id="captchaStatus"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <header>
+    <div class="logo" data-en="Return YouTube Dislikes" data-ru="Вернуть дизлайки YouTube">Return YouTube Dislikes</div>
+    <div class="header-buttons">
+      <a href="#" class="download-apk" data-en="⬇️ Download APK" data-ru="⬇️ Скачать APK">⬇️ Download APK</a>
+      <a href="https://t.me/ArticleDLC/" class="telegram" data-en="Our Telegram Channel ↗️" data-ru="Наш Telegram-канал ↗️">Our Telegram Channel ↗️</a>
+      <button class="language-toggle" data-lang="en">EN / RU</button>
+      <button class="theme-toggle">🌙</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <section class="hero">
+      <h1>
+        <span data-en="Restore" data-ru="Восстановить"></span>
+        <img src="https://www.youtube.com/favicon.ico" alt="YouTube Logo">
+        <span data-en="Dislikes" data-ru="Дизлайки"></span>
+      </h1>
+      <p data-en="Bring back the dislike count on YouTube videos with our Android APK. See the true engagement of videos and make informed decisions about what to watch." data-ru="Верните счетчик дизлайков на видео YouTube с помощью нашего Android APK. Узнайте реальную вовлеченность видео и принимайте осознанные решения о просмотре.">
+        Bring back the dislike count on YouTube videos with our Android APK. See the true engagement of videos and make informed decisions about what to watch.
+      </p>
+      <div class="cta-buttons">
+        <a href="#" class="primary-cta" data-en="⬇️ Download APK" data-ru="⬇️ Скачать APK">⬇️ Download APK</a>
+        <a href="https://t.me/ArticleDLC/" class="secondary-cta" data-en="Our Telegram Channel ↗️" data-ru="Наш Telegram-канал ↗️">Our Telegram Channel ↗️</a>
+      </div>
+    </section>
+
+    <section class="faq">
+      <h2 data-en="Frequently Asked Questions" data-ru="Часто задаваемые вопросы">Frequently Asked Questions</h2>
+      <div class="faq-item">
+        <div class="faq-question">
+          <span data-en="What does Return YouTube Dislikes do?" data-ru="Что делает Return YouTube Dislikes?">What does Return YouTube Dislikes do?</span>
+          <span class="arrow">▼</span>
+        </div>
+        <div class="faq-answer">
+          <span data-en="Our Android APK restores the display of dislike counts on YouTube videos that were hidden by the platform in 2021. We use a combination of archived data and user votes to provide accurate dislike counts." data-ru="Наш Android APK восстанавливает отображение количества дизлайков на видео YouTube, скрытых платформой в 2021 году. Мы используем комбинацию архивных данных и голосов пользователей для предоставления точных данных о дизлайках.">
+            Our Android APK restores the display of dislike counts on YouTube videos that were hidden by the platform in 2021. We use a combination of archived data and user votes to provide accurate dislike counts.
+          </span>
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question">
+          <span data-en="Is this APK safe to use?" data-ru="Безопасно ли использовать этот APK?">Is this APK safe to use?</span>
+          <span class="arrow">▼</span>
+        </div>
+        <div class="faq-answer">
+          <span data-en="Absolutely! Our code is completely open source, regularly audited by the community, and doesn't collect personal data. Millions of users already trust our solution worldwide." data-ru="Абсолютно! Наш код полностью открыт, регулярно проверяется сообществом и не собирает личные данные. Миллионы пользователей по всему миру уже доверяют нашему решению.">
+            Absolutely! Our code is completely open source, regularly audited by the community, and doesn't collect personal data. Millions of users already trust our solution worldwide.
+          </span>
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question">
+          <span data-en="Does the APK work on Android devices?" data-ru="Работает ли APK на устройствах Android?">Does the APK work on Android devices?</span>
+          <span class="arrow">▼</span>
+        </div>
+        <div class="faq-answer">
+          <span data-en="Yes! Our APK is designed for Android devices and integrates with the YouTube app." data-ru="Да! Наш APK разработан для устройств Android и интегрируется с приложением YouTube.">
+            Yes! Our APK is designed for Android devices and integrates with the YouTube app.
+          </span>
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question">
+          <span data-en="Why are dislikes important for YouTube's ecosystem?" data-ru="Почему дизлайки важны для экосистемы YouTube?">Why are dislikes important for YouTube's ecosystem?</span>
+          <span class="arrow">▼</span>
+        </div>
+        <div class="faq-answer">
+          <span data-en="Dislikes help viewers quickly assess content quality, protect against clickbait and misinformation, and provide creators with valuable feedback to improve their content." data-ru="Дизлайки помогают зрителям быстро оценить качество контента, защищают от кликбейта и дезинформации, а также предоставляют создателям ценную обратную связь для улучшения их контента.">
+            Dislikes help viewers quickly assess content quality, protect against clickbait and misinformation, and provide creators with valuable feedback to improve their content.
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <section class="social-section">
+      <h2 data-en="Meet Our Developers" data-ru="Познакомьтесь с нашими разработчиками">Meet Our Developers</h2>
+      <div class="developer">
+        <h3>KallCode (Owner)</h3>
+        <div class="social-buttons">
+          <a href="https://github.com/kallcode" class="github">
+            <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub Logo">
+            GitHub
+          </a>
+          <a href="https://t.me/@ArticleDLC" class="telegram">
+            <img src="https://telegram.org/img/t_logo.png" alt="Telegram Logo">
+            Article Hack
+          </a>
+          <a href="https://tiktok.com/@kallcode" class="tiktok">
+            <img src="https://sf-tbcdn-tb.tiktokcdn.com/obj/eden-sg/uhtyvuehnd/TikTok_Logo_2023_RGB_Black.png" alt="TikTok Logo">
+            TikTok
+          </a>
+        </div>
+      </div>
+      <div class="developer">
+        <h3>WriteCode (Moderator)</h3>
+        <div class="social-buttons">
+          <a href="https://t.me/@ArticleDLC" class="telegram">
+            <img src="https://telegram.org/img/t_logo.png" alt="Telegram Logo">
+            Article Hack
+          </a>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <span data-en="© 2025 Return YouTube Dislikes. All rights reserved." data-ru="© 2025 Вернуть дизлайки YouTube. Все права защищены.">
+      © 2025 Return YouTube Dislikes. All rights reserved.
+    </span>
+  </footer>
+
+  <script>
+    // CAPTCHA Generation
+    const canvas = document.getElementById('captchaCanvas');
+    const ctx = canvas.getContext('2d');
+    let captchaCode = '';
+
+    function generateCaptcha() {
+      captchaCode = '';
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      const length = 6;
+
+      // Clear canvas
+      ctx.fillStyle = '#f0f0f0';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Add noise
+      for (let i = 0; i < 100; i++) {
+        ctx.fillStyle = `rgba(${Math.random() * 255},${Math.random() * 255},${Math.random() * 255},0.3)`;
+        ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 2, 2);
+      }
+
+      // Generate random code
+      for (let i = 0; i < length; i++) {
+        const char = chars.charAt(Math.floor(Math.random() * chars.length));
+        captchaCode += char;
+
+        // Draw character
+        ctx.font = `${Math.random() * 20 + 20}px Arial`;
+        ctx.fillStyle = `rgb(${Math.random() * 255},${Math.random() * 255},${Math.random() * 255})`;
+        ctx.fillText(char, 20 + i * 30, 50 + (Math.random() * 20 - 10));
+      }
+
+      // Add distortion lines
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(${Math.random() * 255},${Math.random() * 255},${Math.random() * 255},0.5)`;
+        ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
+        ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
+        ctx.stroke();
+      }
+    }
+
+    function refreshCaptcha() {
+      generateCaptcha();
+      document.getElementById('captchaInput').value = '';
+      document.getElementById('captchaStatus').textContent = '';
+    }
+
+    document.getElementById('captchaInput').addEventListener('input', (e) => {
+      const userInput = e.target.value.toUpperCase();
+      const status = document.getElementById('captchaStatus');
+      if (userInput === captchaCode) {
+        status.textContent = currentLang === 'en' ? 'Correct!' : 'Правильно!';
+        status.style.color = 'green';
+        setTimeout(() => {
+          document.getElementById('captchaModal').style.display = 'none';
+          document.body.classList.remove('locked');
+        }, 1000);
+      } else {
+        status.textContent = currentLang === 'en' ? 'Incorrect' : 'Неправильно';
+        status.style.color = 'red';
+      }
+    });
+
+    // Initial CAPTCHA generation
+    generateCaptcha();
+
+    // FAQ toggle
+    document.querySelectorAll('.faq-question').forEach(item => {
+      item.addEventListener('click', () => {
+        const answer = item.nextElementSibling;
+        const arrow = item.querySelector('.arrow');
+        answer.classList.toggle('active');
+        arrow.classList.toggle('active');
+      });
+    });
+
+    // Theme toggle
+    const themeToggle = document.querySelector('.theme-toggle');
+    themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark-theme');
+      themeToggle.textContent = document.body.classList.contains('dark-theme') ? '☀️' : '🌙';
+    });
+
+    // Language toggle
+    const langToggle = document.querySelector('.language-toggle');
+    let currentLang = 'en';
+
+    function updateLanguage(lang) {
+      document.querySelectorAll('[data-en]').forEach(elem => {
+        elem.textContent = elem.getAttribute(`data-${lang}`);
+      });
+      document.documentElement.lang = lang;
+    }
+
+    langToggle.addEventListener('click', () => {
+      currentLang = currentLang === 'en' ? 'ru' : 'en';
+      updateLanguage(currentLang);
+      langToggle.setAttribute('data-lang', currentLang);
+      langToggle.textContent = currentLang === 'en' ? 'EN / RU' : 'RU / EN';
+    });
+  </script>
+</body>
+</html>

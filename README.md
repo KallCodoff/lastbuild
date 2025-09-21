@@ -1,3 +1,2 @@
-# kallcode.yo
-Привет, тут  был kallcode.
-я решил заибонить тут свой сайт мб кому нибудь надо будет
+# last build
+kall's last build site
